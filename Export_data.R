@@ -26,12 +26,11 @@ sample_list<-lapply(dir('RData/',full.names = T),function(x) {
 
 sapply(sample_list,names)
 
-names(sample_list[[5]])[7]<-'X5'
-names(sample_list[[7]])[7]<-'X5'
-names(sample_list[[8]])[7]<-'X5'
-names(sample_list[[11]])[7]<-'X5'
-names(sample_list[[15]])[7]<-'X5'
-names(sample_list[[13]])[7]<-'X5'
+names(sample_list[[10]])[7]<-'X5'
+names(sample_list[[14]])[7]<-'X5'
+names(sample_list[[16]])[7]<-'X5'
+names(sample_list[[17]])[7]<-'X5'
+names(sample_list[[20]])[7]<-'X5'
 
 Models_John <- data.frame(do.call(rbind,sample_list))
 
@@ -48,5 +47,5 @@ ggplot(Models_John,aes(Time,value))+
 
 Models_John <- data.frame(do.call(rbind,sample_list))
 names(Models_John)<-c("Sample","Time","Ag_1","Ag_2","Ag_3","Ag_4","Ag_5")
-write.csv(Models_John,file='Files/Disaggregation_test.csv')
+# write.csv(Models_John,file='Files/Disaggregation_test.csv')
 
