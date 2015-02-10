@@ -179,7 +179,7 @@ DATA <-lapply(DATA,function(x) {
 standards<-data.frame(do.call(rbind,DATA),do.call(rbind,values_fit))
 
 ggplot(standards,aes(Time_log,(Mean_Diam-Initial_size)/Initial_size,group=Sample))+
-  geom_point(aes(Time_log,fit_dif,colour=System))+
+  geom_point(aes(colour=System))+
   labs(y='Cm2',x='Seconds in log scale')+
   facet_wrap(~System)+
   theme_bw()

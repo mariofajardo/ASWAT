@@ -10,3 +10,5 @@ Plots
 Test.R
 Tests
 sample_0
+packrat/lib*/
+packrat/src/
