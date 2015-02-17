@@ -9,11 +9,11 @@ setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_15_Nat_5_10_2/',full.names = T)[1:6]
+FILES<-dir(path = 'Images/Sample_2_Nat_5_10/',full.names = T)[1:6]
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
-  #   display(img)
+#   display(img)
   num_agregates <- 5
   cutting_area<-list(c(1000:2000),c(500:1500))
   a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.8
@@ -21,15 +21,14 @@ areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   #Apply some filters for taking the '0' values inside de agregate#
   y <- closing(a, makeBrush(5, shape='disc'))
   #check#
-  #   display(y,method='raster')
+#   display(y,method='raster')
   ## Recognize and label each agregate as a differen object##
   z <- bwlabel(y)
   agregates<-as.numeric(names(sort(table(z),decreasing = T))[0:num_agregates+1])
   Ag_count <-z*(matrix(z%in%c(agregates),ncol=dim(z)[2]))
   
-  ids<-unique(as.factor(Ag_count))
-  for (i in 1:num_agregates){
-    Ag_count[Ag_count==ids[i]]<-i-1
+  for (i in agregates){
+    Ag_count[Ag_count==i]<-i
   }
   ## re-color agregates in colors##
   cols = c('black', rainbow(n=num_agregates))
@@ -40,7 +39,7 @@ areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   #check#
   #   display(img,method = 'raster')
   #   display(Ag_count_colored,method = 'raster')
-  #     computeFeatures.shape(Ag_count)[,1]
+#     computeFeatures.shape(Ag_count)[,1]
 }
 
 stopCluster(cl)
@@ -60,7 +59,7 @@ setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_15_Nat_5_10_2/',full.names = T)
+FILES<-dir(path = 'Images/Sample_2_Nat_5_10/',full.names = T)
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
@@ -97,8 +96,9 @@ areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
 
 stopCluster(cl)
 
+areas[[1]]<-areas[[1]][c(1,2,3,5,4)];names(areas[[1]])<-c(1:5)
 
-saveRDS(areas,file = 'RData/Sample_15_Nat_5_10.RData')
+saveRDS(areas,file = 'RData/Sample_2_Nat_5_10.RData')
 num_agregates <- 5
 observations<-c(seq(0,120,1),seq(140,360,20),seq(420,7200,600))
 for (i in 1:num_agregates){

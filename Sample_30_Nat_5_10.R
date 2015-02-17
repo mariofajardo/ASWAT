@@ -9,7 +9,7 @@ setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_15_Nat_5_10_2/',full.names = T)[1:6]
+FILES<-dir(path = 'Images/Sample_30_Nat_5_10/',full.names = T)[1:6]
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
@@ -60,7 +60,7 @@ setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_15_Nat_5_10_2/',full.names = T)
+FILES<-dir(path = 'Images/Sample_30_Nat_5_10/',full.names = T)
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
@@ -98,7 +98,8 @@ areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
 stopCluster(cl)
 
 
-saveRDS(areas,file = 'RData/Sample_15_Nat_5_10.RData')
+
+saveRDS(areas,file = 'RData/Sample_30_Nat_5_10.RData')
 num_agregates <- 5
 observations<-c(seq(0,120,1),seq(140,360,20),seq(420,7200,600))
 for (i in 1:num_agregates){

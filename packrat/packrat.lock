@@ -32,8 +32,8 @@ Hash: 58f2a3365d6960279a3ef03b110e6475
 
 Package: EBImage
 Source: Bioconductor
-Version: 4.8.2
-Hash: 6f6b6272a311b793962bb47e2fe58d73
+Version: 4.4.0
+Hash: 4cff30490cf7e650f9d22e98c4faba30
 Requires: BiocGenerics, abind, jpeg, locfit, png, tiff
 
 Package: MASS

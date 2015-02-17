@@ -72,7 +72,7 @@ result
 })
 
 #check#
-#lapply(pixels_per_c2m,function(x) display(x[[1]],method = 'raster'))
+# lapply(pixels_per_c2m,function(x) display(x[[1]],method = 'raster'))
 cameras<-read.csv('Images/Calibration_samples.csv')[,1:5]
 cameras$Sample <- as.character(paste('Sample',cameras$Site,cameras$System,cameras$top,cameras$bottom,sep='_'))
 
@@ -103,8 +103,9 @@ theme_bw()
 
 DATA <-split(standards,standards$Sample)
 
+
 DATA <-lapply(DATA,function(x) {
-  x$Mean_Diam_Norm<-x$Mean_Diam/x$Mean_Diam[which.max(x$Mean_Diam)]
+  x$Mean_Diff_Diam<-(x$Mean_Diam-x$Initial_size)/x$Initial_size
   x$Time <- x$Time+1
   x$Time_log <-log(x$Time)
   #sampling in logarithmic intervals
@@ -112,9 +113,119 @@ DATA <-lapply(DATA,function(x) {
   x
 })
 
+standards<-do.call(rbind,DATA)
 
-####Take the sample 18 out ... something bad happened in that one####
-DATA <- DATA[-18]
+
+####Paired T test####
+#take those samples with less observations#
+tapply(standards$Time,standards$Sample,function(x) x[length(x)])
+ 
+standards<-standards[!standards$Site==30,]
+standards<-droplevels(standards)
+
+#
+
+require(manipulate)
+
+plot_t_test <-function(x){
+  crop <-standards[standards$System=='Crop'& standards$Time==x,]
+  nat <-standards[standards$System=='Nat'& standards$Time==x,]
+  
+  t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)
+  
+  paired_t_test <- melt(data.frame(Sample=crop$Sample,
+                                   crop=crop$Mean_Diff_Diam,
+                                   nat=nat$Mean_Diff_Diam),
+                        varnames='Sample')
+  
+  
+  ggplot(paired_t_test,aes(group=variable))+
+          geom_boxplot(aes(variable,value))+
+          coord_flip()+
+          ggtitle(paste0('Time = ', x,' t-value= ',round(t_test[[1]],3),' p-value= ', round(t_test[[3]],3)))
+}
+
+manipulate(plot_t_test(time),time=picker(as.list(unique(standards$Time))))
+
+
+
+####t and p values evolution####
+t_p_values<-lapply(unique(standards$Time)[-c(1,122)],function(x){
+crop <-standards[standards$System=='Crop'& standards$Time==x,]
+nat <-standards[standards$System=='Nat'& standards$Time==x,]
+t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)
+})
+
+t_p_values<-as.data.frame(t(sapply(t_p_values,function(x) c(x[[1]],x[[3]]))))
+t_p_values$time<-unique(standards$Time)[-c(1,122)]
+colnames(t_p_values) <-c('t-value','p-value','time')
+thresh<-t_p_values$time[which.min(t_p_values[,'p-value']>.05)]
+t_p_values<-melt(t_p_values,id.vars = 'time')
+
+
+ggplot(t_p_values,aes(x = time,y = value,colour=variable))+
+  geom_line(size=1.5)+
+  geom_hline(yintercept=.05)+
+  geom_vline(xintercept=thresh)+
+  geom_text(aes(x = 75,y = 0.1,label='0.05 threshold'),colour='black')+
+  geom_text(aes(x = 100,y = 1,label=paste0('first significative difference = ', thresh, ' seconds')),colour='black')+
+  scale_x_log10()+
+  xlab(label = 'log_scale_time')+
+  ggtitle('Evolution of paired t-tests between dissagregation values in Crop and Natural systems (Null hypothesis = Means are equal)')
+
+  
+##### and by depth ####
+require(manipulate)
+
+plot_t_test <-function(x,type){
+  standards <- standards[standards$top==as.numeric(type),]
+  crop <-standards[standards$System=='Crop'& standards$Time==x,]
+  nat <-standards[standards$System=='Nat'& standards$Time==x,]
+  
+  t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)
+  
+  paired_t_test <- melt(data.frame(Sample=crop$Sample,
+                                   crop=crop$Mean_Diff_Diam,
+                                   nat=nat$Mean_Diff_Diam),
+                        varnames='Sample')
+  
+  
+  ggplot(paired_t_test,aes(group=variable))+
+    geom_boxplot(aes(variable,value))+
+    coord_flip()+
+    ggtitle(paste0('Time = ', x,' t-value= ',round(t_test[[1]],3),' p-value= ', round(t_test[[3]],3)))
+}
+
+manipulate(plot_t_test(time,type),time=picker(as.list(unique(standards$Time))),type=picker(list(0,5)))
+
+
+
+####t and p values evolution####
+t_p_values<-lapply(unique(standards$Time)[-c(1,122)],function(x){
+  lapply(c(0,5),function(y){
+    crop <-standards[standards$System=='Crop'& standards$Time==x & standards$top==y,]
+    nat <-standards[standards$System=='Nat'& standards$Time==x & standards$top==y,]
+    t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)})
+})
+
+t_p_values<-as.data.frame(t(sapply(t_p_values,function(x) c(x[[1]][c(1,3)],x[[2]][c(1,3)]))))
+t_p_values$time<-unique(standards$Time)[-c(1,122)]
+colnames(t_p_values) <-c('t-value_0_5','p-value_0_5','t-value_5_10','p-value_5_10','time')
+str(t_p_values)
+thresh_0_5<-t_p_values$time[which.min(t_p_values[,'p-value_0_5']>.05)]
+thresh_5_10<-t_p_values$time[which.min(t_p_values[,'p-value_5_10']>.05)]
+t_p_values<-as.data.frame(sapply(t_p_values,function(x) as.numeric(x)))
+t_p_values<-melt(t_p_values,id.vars = 'time')
+
+
+ggplot(t_p_values,aes(x = time,y = value,colour=variable))+
+  geom_line(size=1.5)+
+  geom_hline(yintercept=.05)+
+  scale_x_log10()+
+  xlab(label = 'log_scale_time')+
+  ggtitle('Evolution of paired t-tests between dissagregation values in Crop and Natural systems (Null hypothesis = Means are equal)')+
+  facet_wrap(~variable)
+
 
 ###Fitting exponential curves####
 

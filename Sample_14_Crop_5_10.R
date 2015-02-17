@@ -9,13 +9,13 @@ setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_15_Nat_5_10_2/',full.names = T)[1:6]
+FILES<-dir(path = 'Images/Sample_14_Crop_5_10/',full.names = T)[1:6]
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
   #   display(img)
   num_agregates <- 5
-  cutting_area<-list(c(1000:2000),c(500:1500))
+  cutting_area<-list(c(900:2000),c(500:1600))
   a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.8
   #   display(a,method='raster')
   #Apply some filters for taking the '0' values inside de agregate#
@@ -60,13 +60,13 @@ setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_15_Nat_5_10_2/',full.names = T)
+FILES<-dir(path = 'Images/Sample_14_Crop_5_10/',full.names = T)
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
   # display(img)
   num_agregates <- 5
-  cutting_area<-list(c(1000:2000),c(500:1500))
+  cutting_area<-list(c(900:2000),c(500:1600))
   a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.8
   #   display(a,method='raster')
   #Apply some filters for taking the '0' values inside de agregate#
@@ -98,7 +98,9 @@ areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
 stopCluster(cl)
 
 
-saveRDS(areas,file = 'RData/Sample_15_Nat_5_10.RData')
+areas[[1]]<-areas[[1]][c(2,1,3,4,5)];names(areas[[1]])<-c(1:5)
+
+saveRDS(areas,file = 'RData/Sample_14_Crop_5_10.RData')
 num_agregates <- 5
 observations<-c(seq(0,120,1),seq(140,360,20),seq(420,7200,600))
 for (i in 1:num_agregates){
