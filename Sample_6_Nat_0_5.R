@@ -102,7 +102,7 @@ areas[[1]]<-areas[[1]][c(2,1,3,5,4)];names(areas[[1]])<-c(1:5)
 
 saveRDS(areas,file = 'RData/Sample_6_Nat_0_5.RData')
 num_agregates <- 5
-observations<-c(seq(0,120,1),seq(140,360,20),seq(420,4200,600))
+observations<-c(seq(0,120,1),seq(140,360,20),seq(420,7200,600))
 for (i in 1:num_agregates){
   Final <-do.call(rbind,areas)  
   Final <- c(0,sapply(2:nrow(Final),function(x) (Final[x,i]-Final[1,1])/Final[1,1])) 

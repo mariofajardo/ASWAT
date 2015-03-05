@@ -3,25 +3,27 @@ library(CRImage)
 require(plyr)
 require(foreach)
 require(doSNOW)
+require(RevobaseEnt)
+require(Revobase)
 
 ncluster <-4
 setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_2_Crop_5_10_2/',full.names = T)[1:4]
+FILES<-dir(path = 'Images/Sample_10_Crop_5_10/',full.names = T)[1:6]
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
-  #display(img)
+  #   display(img)
   num_agregates <- 5
-  cutting_area<-list(c(900:2000),c(650:1600))
-  a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.75
+  cutting_area<-list(c(1000:2000),c(400:1500))
+  a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.8
   #   display(a,method='raster')
   #Apply some filters for taking the '0' values inside de agregate#
   y <- closing(a, makeBrush(5, shape='disc'))
   #check#
-  # display(y,method='raster')
+  #   display(y,method='raster')
   ## Recognize and label each agregate as a differen object##
   z <- bwlabel(y)
   agregates<-as.numeric(names(sort(table(z),decreasing = T))[0:num_agregates+1])
@@ -29,18 +31,18 @@ areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   
   ids<-unique(as.factor(Ag_count))
   for (i in 1:num_agregates){
-  Ag_count[Ag_count==ids[i]]<-i-1
-   }
+    Ag_count[Ag_count==ids[i]]<-i-1
+  }
   ## re-color agregates in colors##
   cols = c('black', rainbow(n=num_agregates))
   result<-list()
-  result$Ag_count_colored = Image(cols[1+Ag_count], dim=dim(Ag_count))
+  result$Ag_count_colored = Image(cols[1+Ag_count], dim=dim(Ag_count),colormode = 'Color')
   result$original <- img
   result
   #check#
   #   display(img,method = 'raster')
   #   display(Ag_count_colored,method = 'raster')
-  #   computeFeatures.shape(Ag_count)[,1]
+  #     computeFeatures.shape(Ag_count)[,1]
 }
 
 stopCluster(cl)
@@ -60,14 +62,14 @@ setMKLthreads(n=2)
 cl <- makeCluster(ncluster) 
 registerDoSNOW(cl)
 
-FILES<-dir(path = 'Images/Sample_2_Crop_5_10_2/',full.names = T)
+FILES<-dir(path = 'Images/Sample_10_Crop_5_10/',full.names = T)
 
 areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
   img<-readImage(filei) 
   # display(img)
   num_agregates <- 5
-  cutting_area<-list(c(900:2000),c(650:1600))
-  a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.75
+  cutting_area<-list(c(1000:2000),c(400:1500))
+  a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.8
   #   display(a,method='raster')
   #Apply some filters for taking the '0' values inside de agregate#
   y <- closing(a, makeBrush(5, shape='disc'))
@@ -97,10 +99,10 @@ areas<-foreach(filei=FILES,.packages = 'EBImage') %dopar%  {
 
 stopCluster(cl)
 
+# areas[[1]]<-areas[[1]][c(1,2,3,5,4)];names(areas[[1]])<-c(1:5)
 
-areas[[1]]<-areas[[1]][c(2,1,3,4,5)];names(areas[[1]])<-c(1:5)
 
-saveRDS(areas,file = 'RData/Sample_2_Crop_5_10.RData')
+saveRDS(areas,file = 'RData/Sample_10_Crop_5_10.RData')
 num_agregates <- 5
 observations<-c(seq(0,120,1),seq(140,360,20),seq(420,7200,600))
 for (i in 1:num_agregates){

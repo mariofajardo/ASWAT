@@ -4,28 +4,9 @@ require(ggplot2)
 require(reshape2)
 sample_list<-lapply(dir('RData/',full.names = T),function(x) {
   tmp<-readRDS(x)
-  if(x=='RData/Sample_2_Crop_5_10.RData'){
-    tmp<-data.frame(Sample=regmatches(x,regexpr('[[:word:]]+(?=[.])',x,perl=TRUE)),
-                    Time=c(seq(0,120,1),seq(160,360,20),seq(420,7200,600)),
-                    do.call(rbind,tmp))
-  }else{
-    if(x=='RData/Sample_6_Nat_0_5.RData'){
-      tmp<-data.frame(Sample=regmatches(x,regexpr('[[:word:]]+(?=[.])',x,perl=TRUE)),
-                      Time=c(seq(0,120,1),seq(140,360,20),seq(420,4200,600)),
-                      do.call(rbind,tmp))
-    }else{
-      if(x=='RData/Sample_30_Crop_5_10.RData'){
-        tmp<-data.frame(Sample=regmatches(x,regexpr('[[:word:]]+(?=[.])',x,perl=TRUE)),
-                        Time=c(seq(0,120,1),seq(140,360,20),seq(420,6600,600)),
-                        do.call(rbind,tmp))
-      }else{
-        
-        tmp<-data.frame(Sample=regmatches(x,regexpr('[[:word:]]+(?=[.])',x,perl=TRUE)),
+  tmp<-data.frame(Sample=regmatches(x,regexpr('[[:word:]]+(?=[.])',x,perl=TRUE)),
                         Time=c(seq(0,120,1),seq(140,360,20),seq(420,7200,600)),
                         do.call(rbind,tmp))
-      }
-    }
-  }
 })
 sample_list<-lapply(sample_list,function(x) {
   colnames(x) <-c("Sample","Time","Ag_1","Ag_2","Ag_3","Ag_4","Ag_5")
@@ -33,17 +14,21 @@ sample_list<-lapply(sample_list,function(x) {
 
 ####Convert to cm by reading standards####
 
-standards <- data.frame(Standard=paste0('Camera',seq(1,4)),Location=c(
+standards <- data.frame(Standard=paste0('Camera',seq(1,8)),Location=c(
                         'Images/Sample_37_Nat_5_10/DSC_3939.JPG',
                         'Images/Sample_38_Nat_0_5/DSC_0030.JPG',
                         'Images/Sample_40_Nat_0_5/DSC_0001.JPG',
-                        'Images/Sample_46_Nat_0_5/DSC_0001.JPG'))
+                        'Images/Sample_46_Nat_0_5/DSC_0001.JPG',
+                        'Images/Sample_3_Nat_5_10/DSC_0002.JPG',
+                        'Images/Sample_4_Nat_0_5/DSC_0002.JPG',
+                        'Images/Sample_4_Nat_5_10_2/DSC_5763.JPG',
+                        'Images/Sample_4_Crop_0_5/DSC_0001.JPG'))
 
 pixels_per_c2m <- lapply(standards[,2],function(x){
   img<-readImage(as.character(x)) 
 #   display(img)
   num_agregates <- 1
-  cutting_area<-list(c(0:740),c(500:1500))
+  cutting_area<-list(c(0:740),c(300:1500))
   a<-!img[cutting_area[[1]],cutting_area[[2]],3]>.8
   #   display(a,method='raster')
   #Apply some filters for taking the '0' values inside de agregate#
@@ -76,7 +61,7 @@ result
 cameras<-read.csv('Images/Calibration_samples.csv')[,1:5]
 cameras$Sample <- as.character(paste('Sample',cameras$Site,cameras$System,cameras$top,cameras$bottom,sep='_'))
 
-pixels<-data.frame(Camera=1:4,equivalent=do.call(c,lapply(pixels_per_c2m,function(x) x[[2]])))
+pixels<-data.frame(Camera=1:8,equivalent=do.call(c,lapply(pixels_per_c2m,function(x) x[[2]])))
 standards <- join(do.call(rbind,sample_list),cameras,'Sample')
 standards <- join(standards,pixels,'Camera')
 standards<-split(standards,standards$Sample)
@@ -117,22 +102,24 @@ standards<-do.call(rbind,DATA)
 
 
 ####Paired T test####
-#take those samples with less observations#
-tapply(standards$Time,standards$Sample,function(x) x[length(x)])
- 
-standards<-standards[!standards$Site==30,]
-standards<-droplevels(standards)
 
-#
+#check first
+# sapply(unique(standards$Site),function(x) {
+#   tmp<-standards[standards$Site==as.character(x),]
+#   sapply(tmp$Sample,function(y) unique(y))
+#   })
+
 
 require(manipulate)
 
 plot_t_test <-function(x){
   crop <-standards[standards$System=='Crop'& standards$Time==x,]
   nat <-standards[standards$System=='Nat'& standards$Time==x,]
-  
-  t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)
-  
+      
+  t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,
+                 paired = T,
+                 alternative = 'greater')
+    
   paired_t_test <- melt(data.frame(Sample=crop$Sample,
                                    crop=crop$Mean_Diff_Diam,
                                    nat=nat$Mean_Diff_Diam),
@@ -153,7 +140,9 @@ manipulate(plot_t_test(time),time=picker(as.list(unique(standards$Time))))
 t_p_values<-lapply(unique(standards$Time)[-c(1,122)],function(x){
 crop <-standards[standards$System=='Crop'& standards$Time==x,]
 nat <-standards[standards$System=='Nat'& standards$Time==x,]
-t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)
+t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,
+               paired = T,
+               alternative = 'greater')
 })
 
 t_p_values<-as.data.frame(t(sapply(t_p_values,function(x) c(x[[1]],x[[3]]))))
@@ -171,18 +160,19 @@ ggplot(t_p_values,aes(x = time,y = value,colour=variable))+
   geom_text(aes(x = 100,y = 1,label=paste0('first significative difference = ', thresh, ' seconds')),colour='black')+
   scale_x_log10()+
   xlab(label = 'log_scale_time')+
-  ggtitle('Evolution of paired t-tests between dissagregation values in Crop and Natural systems (Null hypothesis = Means are equal)')
+  ggtitle('Evolution of paired t-tests between dissagregation values in Crop and Natural systems (Mu0 = Means are equal, Mu1 = Crop Means are greater)')
 
   
 ##### and by depth ####
-require(manipulate)
 
 plot_t_test <-function(x,type){
   standards <- standards[standards$top==as.numeric(type),]
   crop <-standards[standards$System=='Crop'& standards$Time==x,]
   nat <-standards[standards$System=='Nat'& standards$Time==x,]
   
-  t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)
+  t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,
+                 paired = T,
+                 alternative = 'greater')
   
   paired_t_test <- melt(data.frame(Sample=crop$Sample,
                                    crop=crop$Mean_Diff_Diam,
@@ -205,7 +195,9 @@ t_p_values<-lapply(unique(standards$Time)[-c(1,122)],function(x){
   lapply(c(0,5),function(y){
     crop <-standards[standards$System=='Crop'& standards$Time==x & standards$top==y,]
     nat <-standards[standards$System=='Nat'& standards$Time==x & standards$top==y,]
-    t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,paired = T)})
+    t_test<-t.test(crop$Mean_Diff_Diam,nat$Mean_Diff_Diam,
+                   paired = T,
+                   alternative = 'greater')})
 })
 
 t_p_values<-as.data.frame(t(sapply(t_p_values,function(x) c(x[[1]][c(1,3)],x[[2]][c(1,3)]))))
@@ -218,14 +210,21 @@ t_p_values<-as.data.frame(sapply(t_p_values,function(x) as.numeric(x)))
 t_p_values<-melt(t_p_values,id.vars = 'time')
 
 
-ggplot(t_p_values,aes(x = time,y = value,colour=variable))+
+ggplot(t_p_values[t_p_values$variable%in%c('p-value_0_5','p-value_5_10'),],aes(x = time,y = value,colour=variable))+
   geom_line(size=1.5)+
   geom_hline(yintercept=.05)+
   scale_x_log10()+
   xlab(label = 'log_scale_time')+
-  ggtitle('Evolution of paired t-tests between dissagregation values in Crop and Natural systems (Null hypothesis = Means are equal)')+
+  ggtitle('Evolution of paired t-tests between dissagregation values in Crop and Natural systems (Mu0 = Means are equal, Mu1 = Crop Means are greater)')+
   facet_wrap(~variable)
 
+ggplot(t_p_values[t_p_values$variable%in%c('p-value_0_5','p-value_5_10'),],aes(x = time,y = value,colour=variable))+
+  geom_line(size=1.5)+
+  geom_hline(yintercept=.05)+
+  scale_x_log10()+
+  xlab(label = 'log_scale_time')+
+  ggtitle('Evolution of paired t-tests between dissagregation values in Crop and Natural systems (Mu0 = Means are equal, Mu1 = Crop Means are greater)')+
+  facet_wrap(~variable)
 
 ###Fitting exponential curves####
 

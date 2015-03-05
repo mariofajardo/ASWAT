@@ -100,7 +100,7 @@ stopCluster(cl)
 
 saveRDS(areas,file = 'RData/Sample_30_Crop_5_10.RData')
 num_agregates <- 5
-observations<-c(seq(0,120,1),seq(140,360,20),seq(420,6600,600))
+observations<-c(seq(0,120,1),seq(140,360,20),seq(420,7200,600))
 for (i in 1:num_agregates){
   Final <-do.call(rbind,areas)  
   Final <- c(0,sapply(2:nrow(Final),function(x) (Final[x,i]-Final[1,1])/Final[1,1])) 
